@@ -47,7 +47,7 @@ class LevelManager:
         # TODO: AssetManager requires path to MainMenu music. In gameData.py
         self._asset_manager: AssetManager = AssetManager("ook")
         # main menu is the first thing that is loaded
-        self._menu: MainMenu = MainMenu()
+        self._menu: MainMenu = MainMenu(self._asset_manager._music_manager)
         self._level: object = object()
         self._user_input: str = "None"
 

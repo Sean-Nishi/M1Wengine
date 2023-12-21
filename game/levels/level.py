@@ -197,6 +197,12 @@ class Level(object):
     def load_music(self, level_key: str) -> None:
         """Load music into the music mixer."""
         path: str = level_data[level_key]["music"]
+        # if other music is currently playing, fade out and unload
+        if self._mixer.music.get_busy():
+            self._mixer.music.fadeout(2000)
+            while self._mixer.get_busy():
+                continue
+            self._mixer.music.unload()
         self._mixer.music.load(path)
         self._mixer.music.play(LOOP_MUSIC)
 
