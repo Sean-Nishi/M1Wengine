@@ -1,6 +1,7 @@
 """AssetManager class."""
 import pygame
 from file_managers.support import import_cut_graphic
+from game_data import level_data, menu_data
 
 
 class AssetManager:
@@ -15,9 +16,15 @@ class AssetManager:
         The list of pygame.sprites that will be used by levels
     _music_manager: pygame.mixer
         The mixer that loads and plays music
+
+    Methods
+    -------
+    add_music(self, menu_flag: str, key: str)
+        Unload previous music and loads new music
+
     """
 
-    def __init__(self, main_menu_music: str) -> None:
+    def __init__(self) -> None:
         """Load sprite and music assets.
 
         Parameters
@@ -30,6 +37,18 @@ class AssetManager:
             "game_assets/graphics/tilesets/tiny_atlas.png"
         )
 
-        # TODO: music mixer initialized with MainMenu music
         self._music_manager: pygame.mixer = pygame.mixer
         self._music_manager.init()
+
+    def load_music(self, menu_flag: str, key: str) -> None:
+        """Unload previous music and loads menu music."""
+        if self._music_manager.get_busy():
+            self._music_manager.music.fadeout(2000)
+            while self._music_manager.music.get_busy():
+                continue
+            self._music_manager.music.unload()
+        if menu_flag == "menu":
+            self._music_manager.music.load(menu_data.get(key).get("music"))
+        else:
+            self._music_manager.music.load(level_data.get(key).get("music"))
+        self._music_manager.music.play()

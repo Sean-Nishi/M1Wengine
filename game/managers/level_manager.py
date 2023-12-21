@@ -5,6 +5,7 @@ from levels.test_level.test_level import TestLevel
 from managers.asset_manager import AssetManager
 from menus.main_menu.main_menu import MainMenu
 from settings import FPS
+from game_data import level_data, menu_data
 
 
 class LevelManager:
@@ -44,12 +45,12 @@ class LevelManager:
         self._screen: pygame.Surface = pygame.display.get_surface()
         # TODO: move clock to setter/getter style
         self._clock: pygame.time.Clock = pygame.time.Clock()
-        # TODO: AssetManager requires path to MainMenu music. In gameData.py
-        self._asset_manager: AssetManager = AssetManager("ook")
-        # main menu is the first thing that is loaded
-        self._menu: MainMenu = MainMenu(self._asset_manager._music_manager)
-        self._level: object = object()
+        self._asset_manager: AssetManager = AssetManager()
         self._user_input: str = "None"
+        # main menu is the first thing that is loaded
+        self._menu: MainMenu = MainMenu(menu_data.get("main_menu"))
+        self._asset_manager.load_music("menu", "main_menu")
+        self._level: object = object()
 
         # quit flag returned to game
         self._quit_game: bool = False
@@ -69,9 +70,12 @@ class LevelManager:
                     # TODO: safely access and give asset_manager's stuff to level
                     self._level = TestLevel(
                         self._asset_manager._univeral_sprites,
-                        self._asset_manager._music_manager,
-                        "test_level",
+                        level_data.get("test_level"),
                     )
+                    # unload music and load in new music
+                    level_key: str = "test_level"
+                    self._asset_manager.load_music("level", level_key)
+
                 self._level.run()
         elif self._user_input == "Quit":
             self._quit_game is not self._quit_game

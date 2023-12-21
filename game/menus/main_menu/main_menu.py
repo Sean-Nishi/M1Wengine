@@ -4,8 +4,6 @@ import pygame_menu
 from settings import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
-    MAIN_MENU_BACKGROUND_PATH,
-    MAIN_MENU_MUSIC_PATH,
 )
 
 
@@ -26,8 +24,6 @@ class MainMenu(pygame_menu.Menu):
 
     Methods
     -------
-    add_menu_music(self, manager_mixer: pygame.mixer)
-        Unload previous music, load and play main menu music
     get_user_selection(self)
         Get the user selection
     set_user_selection(self, selection: str)
@@ -42,29 +38,25 @@ class MainMenu(pygame_menu.Menu):
         Draw the menu to the display surface and start the menuLoop
     """
 
-    def __init__(self, manager_mixer: pygame.mixer) -> None:
+    def __init__(self, main_menu_dict: dict) -> None:
         """Construct the main menu class.
 
         This method will instantiate all required sprite groups for the main menu level
+
+        Parameters
+        ----------
+        main_menu_dict: dict
+            The dictionary containing main_menu specific data
         """
         super().__init__("Main Menu", WINDOW_WIDTH, WINDOW_HEIGHT)
-        self._menu_image: pygame.Surface = pygame.image.load(MAIN_MENU_BACKGROUND_PATH)
+        self._menu_image: pygame.Surface = pygame.image.load(
+            main_menu_dict.get("background_image_path")
+        )
         self._display_surface: pygame.Surface = pygame.display.get_surface()
-        self.add_menu_music(manager_mixer)
         # create pygame_menu options for the main menu
         self.add_menu_options()
         # TODO: self._user_selection should be Enum
         self._user_selection: str = "None"
-
-    def add_menu_music(self, manager_mixer: pygame.mixer) -> None:
-        """Unload previous music and loads menu music."""
-        if manager_mixer.music.get_busy():
-            manager_mixer.music.fadeout(2000)
-            while manager_mixer.music.get_busy():
-                continue
-            manager_mixer.music.unload()
-        manager_mixer.music.load(MAIN_MENU_MUSIC_PATH)
-        manager_mixer.music.play()
 
     def set_user_selection(self, selection: str) -> None:
         """Set user selection for MainMenu.

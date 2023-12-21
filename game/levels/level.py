@@ -1,14 +1,12 @@
 """This module contains the Level class."""
-from typing import List
 import pygame
 from tiles.entities.characters.player import Player
 from tiles.entities.characters.NPCs.damsel import Damsel
 from tiles.entities.characters.NPCs.skeleton import Skeleton
 from tiles.tile import Tile
 from file_managers.support import import_csv_layout
-from settings import TILESIZE, LOOP_MUSIC
+from settings import TILESIZE
 from managers.camera_manager import CameraManager
-from game_data import level_data
 from game_data import character_keys
 
 
@@ -21,10 +19,8 @@ class Level(object):
     ----------
     _display_surface: pygame.Surface
         The surface which to display the level
-    _universal_assets: List[pygame.sprites]
+    _universal_assets: list[pygame.sprites]
         The list of all art assets from LevelManager
-    _mixer: pygame.mixer
-        LevelManager's music mixer for level specific music
     _camera: CameraManager
         CameraManager handles sprite movement across the screen relative to the player
     _paused: bool
@@ -32,46 +28,44 @@ class Level(object):
 
     Methods
     -------
-    create_map(self, level_key: str)
+    create_map(self, level_dict: dict)
         Parses gameData.py's level_data using level_key to get this level's sprites
     create_sprite_groups(self)
         Create all sprites groups used in the level
-    create_entities_from_layout(self, layout: List[int])
+    create_entities_from_layout(self, layout: list[int])
         Parse the level map's layout for entities and initialize them
-    create_tile_group(self, layout: List[int]) -> pygame.sprite.Group
+    create_tile_group(self, layout: list[int]) -> pygame.sprite.Group
         Create tiles for the map using the layout and universal assets
     add_obstacles(self)
         Add level specific obstacles to _obstacle_sprites
     add_sprites_to_camera(self)
         Add all visible sprites to the CameraManager
-    pauseMenu(self)
+    pause_menu(self)
         Handle a paused game
     run(self)
         Draw and update all sprite groups
     """
 
-    def __init__(
-        self, universal_assets: List, music_handler: pygame.mixer, level_key: str
-    ):
+    # TODO: pass in level_dict from level_manager instead of level_key.
+    # Don't need to import all level_data that way
+    def __init__(self, universal_assets: list, level_dict: dict):
         """Construct the level class.
 
         This method will instantiate all required sprite groups for the current level
 
         Parameters
         ----------
-        universal_assets: List[pygame.sprite]
+        universal_assets: list[pygame.sprite]
             The list containing all game assets which the level will select from
-        music_handler: pygame.mixer
-            LevelManager's music mixer to play this level's music
-        level_key: str
-            The key to the specific level data when parsing gameData.py
+        level_dict: dict
+            The dictionary containing this level's game data
         """
         self._display_surface: pygame.Surface = pygame.display.get_surface()
 
-        self._universal_assets: List = universal_assets
+        self._universal_assets: list = universal_assets
 
         # extract data from level_data dictionary in gameData.py
-        self.create_map(level_key)
+        self.create_map(level_dict)
         self.create_sprite_groups()
         self.add_obstacles()
         self.create_entities_from_layout(self._character_layout)
@@ -79,26 +73,22 @@ class Level(object):
         self._camera = CameraManager(self.player)
         self.add_sprites_to_camera()
 
-        self._mixer: pygame.mixer = music_handler
-        self.load_music(level_key)
-        # TODO: have destructor unload/fade out music to main menu music
-
         # pause flag used to display pause menu
         self._paused = False
 
-    def create_map(self, level_key: str) -> None:
+    def create_map(self, level_dict: dict) -> None:
         """Read level data from gameData.py and stage it for rendering."""
         # setup map
-        terrain_layout: list[int] = import_csv_layout(level_data[level_key]["ground"])
-        rocks_layout: list[int] = import_csv_layout(level_data[level_key]["rocks"])
+        terrain_layout: list[int] = import_csv_layout(level_dict.get("ground"))
+        rocks_layout: list[int] = import_csv_layout(level_dict.get("rocks"))
         raised_ground_layout: list[int] = import_csv_layout(
-            level_data[level_key]["raised_ground"]
+            level_dict.get("raised_ground")
         )
-        plants_layout: list[int] = import_csv_layout(level_data[level_key]["plants"])
-        fence_layout: list[int] = import_csv_layout(level_data[level_key]["fence"])
-        extra_layout: list[int] = import_csv_layout(level_data[level_key]["extra"])
+        plants_layout: list[int] = import_csv_layout(level_dict.get("plants"))
+        fence_layout: list[int] = import_csv_layout(level_dict.get("fence"))
+        extra_layout: list[int] = import_csv_layout(level_dict.get("extra"))
         self._character_layout: list[int] = import_csv_layout(
-            level_data[level_key]["characters"]
+            level_dict.get("characters")
         )
 
         self._terrain_sprites: pygame.sprite.Group = self.create_tile_group(
@@ -118,12 +108,13 @@ class Level(object):
         self._attack_sprites = pygame.sprite.Group()
         self._player_group = pygame.sprite.GroupSingle()
 
-    def create_entities_from_layout(self, layout: List[int]) -> None:
+    def create_entities_from_layout(self, layout: list[int]) -> None:
         """Initialize the entities on a layout.
 
         Parameters
         ----------
-        layout: array of values each representing an individual entity
+        layout: list[int]
+            list of values representing an individual entity from the map
         """
         # default location of top left corner should never be used
         x = 0
@@ -158,12 +149,12 @@ class Level(object):
         for entity in self._bad_sprites:
             entity.set_player(self.player)
 
-    def create_tile_group(self, layout: List[int]) -> pygame.sprite.Group:
+    def create_tile_group(self, layout: list[int]) -> pygame.sprite.Group:
         """Create the :func:`Sprite group<pygame.sprite.Group>` for a layout.
 
         Parameters
         ----------
-        layout: List[int]
+        layout: list[int]
             List of values each representing an individual sprite
         """
         sprite_group = pygame.sprite.Group()
@@ -194,19 +185,7 @@ class Level(object):
         self._camera.add(self._good_sprites)
         self._camera.add(self._bad_sprites)
 
-    def load_music(self, level_key: str) -> None:
-        """Load music into the music mixer."""
-        path: str = level_data[level_key]["music"]
-        # if other music is currently playing, fade out and unload
-        if self._mixer.music.get_busy():
-            self._mixer.music.fadeout(2000)
-            while self._mixer.get_busy():
-                continue
-            self._mixer.music.unload()
-        self._mixer.music.load(path)
-        self._mixer.music.play(LOOP_MUSIC)
-
-    def pauseMenu(self) -> None:
+    def pause_menu(self) -> None:
         """Pauses the game and opens the pause menu."""
         print("PAUSED!")
         pass
@@ -222,7 +201,7 @@ class Level(object):
                     self._paused is not self._paused
 
         if self._paused:
-            self.pauseMenu()
+            self.pause_menu()
         else:
             self._player_group.update(self._bad_sprites, self._good_sprites)
             self._bad_sprites.update(self._bad_sprites, self._good_sprites)
