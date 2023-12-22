@@ -45,6 +45,7 @@ class AssetManager:
         if self._music_manager.get_busy():
             self._music_manager.music.fadeout(2000)
             while self._music_manager.music.get_busy():
+                print("FADE OUT")
                 continue
             self._music_manager.music.unload()
         if menu_flag == "menu":
