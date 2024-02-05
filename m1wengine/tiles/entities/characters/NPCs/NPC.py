@@ -192,8 +192,8 @@ class NPC(Character):
         # vars for targetting and charging
         self.TRACKING_TIMER_SECONDS: int = 2
         self.CHARGING_TIMER_SECONDS: int = 3
-        self._initial_tracking_time: int = self.DEFAULT_TIMER_VALUE
-        self._initial_charge_time: int = self.DEFAULT_TIMER_VALUE
+        self._initial_tracking_time_seconds: int = self.DEFAULT_TIMER_VALUE
+        self._initial_charge_time_seconds: int = self.DEFAULT_TIMER_VALUE
 
         # for automated movements, store a previous timestamp
         self._last_time_stored: int = 0
@@ -454,12 +454,12 @@ class NPC(Character):
             # if there is a good_sprite on tracker's radar
             if collision_dictionary["collision_detected"]:
                 # if first loop, set _initial_tracking_time
-                if self._initial_tracking_time == self.DEFAULT_TIMER_VALUE:
-                    self._initial_tracking_time = int(time.perf_counter())
+                if self._initial_tracking_time_seconds == self.DEFAULT_TIMER_VALUE:
+                    self._initial_tracking_time_seconds = int(time.perf_counter())
 
                 # if we've tracked the target long enough, switch to charge
                 if self.is_timer_finished(
-                    self._initial_tracking_time, self.TRACKING_TIMER_SECONDS
+                    self._initial_tracking_time_seconds, self.TRACKING_TIMER_SECONDS
                 ):
                     self.set_state_charge()
             # else nothing has hit the NPC rect, go back to patrolling
@@ -473,13 +473,13 @@ class NPC(Character):
             self.compass = self._initial_charge_compass
 
             # if first loop, set _initial_charge_time
-            if self._initial_charge_time == self.DEFAULT_TIMER_VALUE:
-                self._initial_charge_time = int(time.perf_counter())
+            if self._initial_charge_time_seconds == self.DEFAULT_TIMER_VALUE:
+                self._initial_charge_time_seconds = int(time.perf_counter())
 
             # if NPC charges long enough or hit an obstacle, go back to default state
             if (
                 self.is_timer_finished(
-                    self._initial_charge_time, self.CHARGING_TIMER_SECONDS
+                    self._initial_charge_time_seconds, self.CHARGING_TIMER_SECONDS
                 )
                 or self.charged_into_obstacle()
             ):
@@ -496,8 +496,8 @@ class NPC(Character):
         if self.speed != self.DEFAULT_SPEED:
             self.speed = self.DEFAULT_SPEED
         self._target_sprite = pygame.sprite.Sprite()
-        self._initial_tracking_time = self.DEFAULT_TIMER_VALUE
-        self._initial_charge_time = self.DEFAULT_TIMER_VALUE
+        self._initial_tracking_time_seconds = self.DEFAULT_TIMER_VALUE
+        self._initial_charge_time_seconds = self.DEFAULT_TIMER_VALUE
 
     def is_timer_finished(
         self, initial_timer: int, timer_threshold_seconds: int
