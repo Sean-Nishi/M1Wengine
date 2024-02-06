@@ -266,10 +266,10 @@ class Tile(pygame.sprite.Sprite):
         speed: int
             Multiplier for changing the sprite position
         """
+        speed = self.refine_speed(speed)
         move_pixels_x = -1 * speed
         move_pixels_y = 0
-        self.rect.move_ip(move_pixels_x, move_pixels_y)
-        self._hitbox.center = self.rect.center
+        self.move_and_update_hitbox(move_pixels_x, move_pixels_y)
 
     def _move_right(self, speed: int) -> None:
         """Move to the right.
@@ -279,10 +279,10 @@ class Tile(pygame.sprite.Sprite):
         speed: int
             Multiplier for changing the sprite position
         """
+        speed = self.refine_speed(speed)
         move_pixels_x = speed
         move_pixels_y = 0
-        self.rect.move_ip(move_pixels_x, move_pixels_y)
-        self._hitbox.center = self.rect.center
+        self.move_and_update_hitbox(move_pixels_x, move_pixels_y)
 
     def _move_up(self, speed: int) -> None:
         """Move up.
@@ -292,10 +292,10 @@ class Tile(pygame.sprite.Sprite):
         speed: int
             Multiplier for changing the sprite position
         """
+        speed = self.refine_speed(speed)
         move_pixels_x = 0
         move_pixels_y = -1 * speed
-        self.rect.move_ip(move_pixels_x, move_pixels_y)
-        self._hitbox.center = self.rect.center
+        self.move_and_update_hitbox(move_pixels_x, move_pixels_y)
 
     def _move_down(self, speed: int) -> None:
         """Move down.
@@ -305,7 +305,16 @@ class Tile(pygame.sprite.Sprite):
         speed: int
             Multiplier for changing the sprite position
         """
+        speed = self.refine_speed(speed)
         move_pixels_x = 0
         move_pixels_y = speed
-        self.rect.move_ip(move_pixels_x, move_pixels_y)
+        self.move_and_update_hitbox(move_pixels_x, move_pixels_y)
+
+    def refine_speed(self, speed: int) -> int:
+        """Reduce speed by factor of 10."""
+        return speed // 10
+
+    def move_and_update_hitbox(self, x: int, y: int) -> None:
+        """Move tile by x, y pixels and update hitbox."""
+        self.rect.move_ip(x, y)
         self._hitbox.center = self.rect.center
