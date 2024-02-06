@@ -9,11 +9,12 @@ import pygame
 from m1wengine.enums.actions import Actions
 from m1wengine.enums.eaten_powers import EatenPowers
 from m1wengine.enums.direction import Direction
-from m1wengine.HUD import HeadsUpDisplay
+from m1wengine.managers.level_manager import LevelManager
 from m1wengine.tiles.entities.characters.player import Player
 from m1wengine.tiles.entities.characters.character import Character
 import m1wengine.settings as settings
 import m1wengine.prompt_strings as prompt_strings
+import m1wengine.abstract_HUD as AbstractHud
 
 
 class NPC(Character):
@@ -175,9 +176,8 @@ class NPC(Character):
                 "Charging",
             ],
         )
-        self._current_state: Enum = self._states.Default
+        self._current_state: Enum = self._states.Patrol
         self._initial_charge_compass: pygame.math.Vector2 = pygame.math.Vector2(0, 0)
-        self._hud = HeadsUpDisplay()
 
         # the closest sprite on our radar
         self._target_sprite: pygame.sprite.Sprite = pygame.sprite.Sprite()
@@ -192,8 +192,8 @@ class NPC(Character):
         # vars for targetting and charging
         self.TRACKING_TIMER_SECONDS: int = 2
         self.CHARGING_TIMER_SECONDS: int = 3
-        self._initial_tracking_time: int = self.DEFAULT_TIMER_VALUE
-        self._initial_charge_time: int = self.DEFAULT_TIMER_VALUE
+        self._initial_tracking_time_seconds: int = self.DEFAULT_TIMER_VALUE
+        self._initial_charge_time_seconds: int = self.DEFAULT_TIMER_VALUE
 
         # for automated movements, store a previous timestamp
         self._last_time_stored: int = 0
@@ -204,6 +204,11 @@ class NPC(Character):
             settings.TILESIZE * inflation_size, settings.TILESIZE * inflation_size
         )
         self._player_collision_resolved = True
+        self._hud = None
+
+    def init_hud(self):
+        """Initialize the NPC handle to HUD."""
+        self._hud: AbstractHud = LevelManager.global_level_manager._hud
 
     def radar_set_states(
         self,
@@ -449,12 +454,12 @@ class NPC(Character):
             # if there is a good_sprite on tracker's radar
             if collision_dictionary["collision_detected"]:
                 # if first loop, set _initial_tracking_time
-                if self._initial_tracking_time == self.DEFAULT_TIMER_VALUE:
-                    self._initial_tracking_time = int(time.perf_counter())
+                if self._initial_tracking_time_seconds == self.DEFAULT_TIMER_VALUE:
+                    self._initial_tracking_time_seconds = int(time.perf_counter())
 
                 # if we've tracked the target long enough, switch to charge
                 if self.is_timer_finished(
-                    self._initial_tracking_time, self.TRACKING_TIMER_SECONDS
+                    self._initial_tracking_time_seconds, self.TRACKING_TIMER_SECONDS
                 ):
                     self.set_state_charge()
             # else nothing has hit the NPC rect, go back to patrolling
@@ -468,13 +473,13 @@ class NPC(Character):
             self.compass = self._initial_charge_compass
 
             # if first loop, set _initial_charge_time
-            if self._initial_charge_time == self.DEFAULT_TIMER_VALUE:
-                self._initial_charge_time = int(time.perf_counter())
+            if self._initial_charge_time_seconds == self.DEFAULT_TIMER_VALUE:
+                self._initial_charge_time_seconds = int(time.perf_counter())
 
             # if NPC charges long enough or hit an obstacle, go back to default state
             if (
                 self.is_timer_finished(
-                    self._initial_charge_time, self.CHARGING_TIMER_SECONDS
+                    self._initial_charge_time_seconds, self.CHARGING_TIMER_SECONDS
                 )
                 or self.charged_into_obstacle()
             ):
@@ -491,8 +496,8 @@ class NPC(Character):
         if self.speed != self.DEFAULT_SPEED:
             self.speed = self.DEFAULT_SPEED
         self._target_sprite = pygame.sprite.Sprite()
-        self._initial_tracking_time = self.DEFAULT_TIMER_VALUE
-        self._initial_charge_time = self.DEFAULT_TIMER_VALUE
+        self._initial_tracking_time_seconds = self.DEFAULT_TIMER_VALUE
+        self._initial_charge_time_seconds = self.DEFAULT_TIMER_VALUE
 
     def is_timer_finished(
         self, initial_timer: int, timer_threshold_seconds: int
@@ -635,6 +640,8 @@ class NPC(Character):
                     self._player.eaten_power = EatenPowers.basic_skeleton
                 elif child_class == "Damsel":
                     self._player.eaten_power = EatenPowers.damsel
+                elif child_class == "Minotaur":
+                    self._player.eaten_power = EatenPowers.minotaur
                 else:
                     raise ValueError(
                         "Unknown caller, cannot set player consume attribute."
@@ -644,6 +651,8 @@ class NPC(Character):
 
     def neutral_collided_with_player(self):
         """Player has collided with a neutral sprite."""
+        if self._hud is None:
+            self.init_hud()
         self._hud.start_prompt_timer()
         child_class: str = self.__class__.__name__
 
